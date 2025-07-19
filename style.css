@@ -1,0 +1,350 @@
+/* ====== CSS Custom Properties ====== */
+:root {
+  --primary-color: #2563eb;
+  --primary-dark: #1d4ed8;
+  --accent-color: #f59e0b;
+  --background-color: #f8fafc;
+  --text-color: #1f2937;
+  --border-color: #d1d5db;
+  --success-color: #10b981;
+  --focus-color: #3b82f6;
+  --radius: 6px;
+}
+
+/* ====== Reset and Base Styles ====== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.6;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ====== Header Styles ====== */
+.site-header {
+  background: white;
+  border-bottom: 3px solid var(--primary-color);
+  padding: 1.5rem 2rem;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.site-header h1 {
+  margin: 0 0 0.5rem 0;
+  color: var(--primary-color);
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 700;
+}
+
+.sub {
+  margin: 0 0 1rem 0;
+  color: #6b7280;
+  font-size: 1.1rem;
+}
+
+/* ====== Progress Bar ====== */
+#progress-container {
+  width: 100%;
+  height: 8px;
+  background-color: #e5e7eb;
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+#progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+  width: 0%;
+  transition: width 0.4s ease;
+}
+
+/* ====== Timer Styles ====== */
+#timer-container {
+  background: white;
+  border: 2px solid var(--primary-color);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#timer-display {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--primary-color);
+}
+
+#timer-bar-container {
+  width: 100%;
+  height: 12px;
+  background-color: #e5e7eb;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+#timer-bar {
+  height: 100%;
+  background-color: var(--success-color);
+  border-radius: var(--radius);
+  transition: width 0.5s ease, background-color 0.3s ease;
+}
+
+/* ====== Main Container ====== */
+#container {
+  flex: 1;
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  width: 100%;
+}
+
+/* ====== Typography ====== */
+h1, h2, h3 {
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+h2 {
+  font-size: 1.875rem;
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: 0.5rem;
+}
+
+h3 {
+  font-size: 1.25rem;
+  color: var(--text-color);
+}
+
+p {
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+/* ====== Form Styles ====== */
+form {
+  background: white;
+  padding: 2rem;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  margin-top: 0.5rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--focus-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* ====== Button Styles ====== */
+button {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.875rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+button:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+button:focus {
+  outline: 3px solid var(--focus-color);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ====== Text Display Styles ====== */
+.text-container {
+  background: white;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.text-type {
+  color: var(--accent-color);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.text-content {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  text-align: justify;
+}
+
+/* ====== Question Styles ====== */
+.question-item {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: var(--radius);
+  border-left: 4px solid var(--primary-color);
+}
+
+.question-item label {
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+}
+
+/* ====== Completion Message Styles ====== */
+.completion-message {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.participant-code {
+  background: #f0f9ff;
+  border: 2px solid var(--primary-color);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin: 1.5rem 0;
+}
+
+.participant-code span {
+  font-family: 'Courier New', monospace;
+  font-size: 1.2em;
+  color: var(--primary-color);
+}
+
+#submission-status {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: #fafafa;
+  border-radius: var(--radius);
+}
+
+.spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid var(--primary-color);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+  margin: 1rem auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ====== Footer ====== */
+footer {
+  text-align: center;
+  padding: 1rem;
+  color: #6b7280;
+  border-top: 1px solid var(--border-color);
+  background: white;
+}
+
+/* ====== Responsive Design ====== */
+@media (max-width: 768px) {
+  .site-header {
+      padding: 1rem;
+  }
+  
+  #container {
+      margin: 1rem auto;
+      padding: 0 0.5rem;
+  }
+  
+  form {
+      padding: 1.5rem;
+  }
+  
+  .text-container {
+      padding: 1.5rem;
+  }
+  
+  button {
+      width: 100%;
+      justify-content: center;
+  }
+  
+  #timer-display {
+      font-size: 1.1rem;
+  }
+}
+
+/* ====== Accessibility ====== */
+@media (prefers-reduced-motion: reduce) {
+  * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus indicators for keyboard navigation */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--focus-color);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+      --primary-color: #000080;
+      --text-color: #000000;
+      --background-color: #ffffff;
+      --border-color: #000000;
+  }
+}
