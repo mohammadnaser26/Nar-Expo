@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 // CORS configuration - allows requests from your GitHub Pages domain
 const corsOptions = {
   origin: [
-    'https://adhamoq.github.io',
+    'https://mohammadnser26.github.io',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:5500'
