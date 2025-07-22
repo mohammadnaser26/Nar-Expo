@@ -366,6 +366,7 @@ function showQuestions() {
     
     let questionsHtml = '<h2>Questions</h2><form id="questions-form">';
     
+    // Add the 10 comprehension questions
     currentText.questions.forEach((question, index) => {
         questionsHtml += `
             <div class="question-item">
@@ -377,6 +378,33 @@ function showQuestions() {
         `;
     });
     
+    // Add the recall question
+    questionsHtml += `
+        <div class="question-item">
+            <label>
+                ${currentText.questions.length + 1}. What can you recall from the topic?
+                <textarea id="recall-question" rows="4" required placeholder="Please write what you can remember about this topic..."></textarea>
+            </label>
+        </div>
+    `;
+    
+    // Add the familiarity question
+    questionsHtml += `
+        <div class="question-item">
+            <label>
+                ${currentText.questions.length + 2}. How familiar are you with this topic? (1=not familiar, 5=very familiar)
+                <select id="familiarity-question" required>
+                    <option value="">Select familiarity level</option>
+                    <option value="1">1 - Not familiar</option>
+                    <option value="2">2 - Somewhat familiar</option>
+                    <option value="3">3 - Moderately familiar</option>
+                    <option value="4">4 - Very familiar</option>
+                    <option value="5">5 - Extremely familiar</option>
+                </select>
+            </label>
+        </div>
+    `;
+    
     questionsHtml += '<button type="submit">Submit Answers</button></form>';
     
     showContainer(questionsHtml);
@@ -385,6 +413,14 @@ function showQuestions() {
         e.preventDefault();
         
         const answers = [];
+        
+        // Add recall as first element
+        answers.push(document.getElementById('recall-question').value);
+        
+        // Add familiarity as second element
+        answers.push(document.getElementById('familiarity-question').value);
+        
+        // Add the 10 comprehension question answers (starting from index 2)
         currentText.questions.forEach((question, index) => {
             answers.push(document.getElementById(`q${index}`).value);
         });
