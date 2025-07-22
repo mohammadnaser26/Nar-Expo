@@ -171,6 +171,8 @@ function showContainer(html) {
 
 // Improved Latin Square implementation for better randomization
 function createLatinSquare(texts) {
+  console.log('Creating Latin Square for participant:', state.participantId);
+  
   // Create separate objects for narrative and expository versions
   const narrativeTexts = texts.map(text => ({
       ...text,
@@ -186,28 +188,52 @@ function createLatinSquare(texts) {
       narrative: undefined // Remove narrative to force expository display
   }));
   
-  // Create participant-specific rotation based on their ID and timestamp
-  const participantSeed = parseInt(state.participantId.substring(state.participantId.length - 4), 36);
-  const timeBasedSeed = Math.floor(Date.now() / 10000);
-  const combinedSeed = participantSeed + timeBasedSeed;
+  // Create a more robust participant ID based system
+  // Use the last 8 characters to get more variation
+  const participantHash = state.participantId.substring(Math.max(0, state.participantId.length - 8));
   
-  // Use different rotations for narrative and expository
-  const narrativeRotation = combinedSeed % narrativeTexts.length;
-  const expositoryRotation = (combinedSeed + 3) % expositoryTexts.length;
+  // Convert participant ID to a more deterministic seed
+  let participantSeed = 0;
+  for (let i = 0; i < participantHash.length; i++) {
+    participantSeed = ((participantSeed << 5) - participantSeed + participantHash.charCodeAt(i)) & 0xffffffff;
+  }
+  
+  // Make the seed positive and use modulo to ensure good distribution
+  participantSeed = Math.abs(participantSeed);
+  
+  // Use different systematic approaches for narrative and expository selection
+  // This ensures better distribution across all texts
+  const totalTexts = narrativeTexts.length;
+  
+  // For narratives: use participant seed modulo total texts
+  const narrativeStart = participantSeed % totalTexts;
+  const narrativeStep = ((participantSeed >> 8) % (totalTexts - 1)) + 1; // Ensure step is never 0
+  
+  // For expositories: use a different offset to avoid correlation
+  const expositoryStart = (participantSeed + 17) % totalTexts; // 17 is a prime offset
+  const expositoryStep = (((participantSeed >> 16) % (totalTexts - 1)) + 1);
   
   const selectedTexts = [];
   
-  // Select 2 narratives and 2 expositories with rotation
+  // Select 2 narratives using systematic sampling
   for (let i = 0; i < 2; i++) {
-      selectedTexts.push(narrativeTexts[(narrativeRotation + i) % narrativeTexts.length]);
-      selectedTexts.push(expositoryTexts[(expositoryRotation + i) % expositoryTexts.length]);
+    const narrativeIndex = (narrativeStart + (i * narrativeStep)) % totalTexts;
+    selectedTexts.push(narrativeTexts[narrativeIndex]);
   }
   
-  // Shuffle the selected texts using the participant seed
-  for (let i = selectedTexts.length - 1; i > 0; i--) {
-      const j = (participantSeed + i) % (i + 1);
-      [selectedTexts[i], selectedTexts[j]] = [selectedTexts[j], selectedTexts[i]];
+  // Select 2 expositories using systematic sampling
+  for (let i = 0; i < 2; i++) {
+    const expositoryIndex = (expositoryStart + (i * expositoryStep)) % totalTexts;
+    selectedTexts.push(expositoryTexts[expositoryIndex]);
   }
+  
+  // Shuffle the selected texts using Fisher-Yates with participant seed
+  for (let i = selectedTexts.length - 1; i > 0; i--) {
+    const j = (participantSeed + i * 7) % (i + 1); // Use different multiplier for shuffling
+    [selectedTexts[i], selectedTexts[j]] = [selectedTexts[j], selectedTexts[i]];
+  }
+  
+  console.log('Selected texts for this participant:', selectedTexts.map(t => `${t.title} (${t.type})`));
   
   return selectedTexts;
 }
@@ -363,10 +389,11 @@ function startTimer() {
 
 function showQuestions() {
     const currentText = state.assignedTexts[state.currentTextIndex];
+    const numQuestions = currentText.questions.length; // Dynamic question count
     
     let questionsHtml = '<h2>Questions</h2><form id="questions-form">';
     
-    // Add the 10 comprehension questions
+    // Add all the comprehension questions (dynamic number)
     currentText.questions.forEach((question, index) => {
         questionsHtml += `
             <div class="question-item">
@@ -382,7 +409,7 @@ function showQuestions() {
     questionsHtml += `
         <div class="question-item">
             <label>
-                ${currentText.questions.length + 1}. What can you recall from the topic?
+                ${numQuestions + 1}. What can you recall from the topic?
                 <textarea id="recall-question" rows="4" required placeholder="Please write what you can remember about this topic..."></textarea>
             </label>
         </div>
@@ -392,7 +419,7 @@ function showQuestions() {
     questionsHtml += `
         <div class="question-item">
             <label>
-                ${currentText.questions.length + 2}. How familiar are you with this topic? (1=not familiar, 5=very familiar)
+                ${numQuestions + 2}. How familiar are you with this topic? (1=not familiar, 5=very familiar)
                 <select id="familiarity-question" required>
                     <option value="">Select familiarity level</option>
                     <option value="1">1 - Not familiar</option>
@@ -420,7 +447,7 @@ function showQuestions() {
         // Add familiarity as second element
         answers.push(document.getElementById('familiarity-question').value);
         
-        // Add the 10 comprehension question answers (starting from index 2)
+        // Add all comprehension question answers (starting from index 2)
         currentText.questions.forEach((question, index) => {
             answers.push(document.getElementById(`q${index}`).value);
         });
