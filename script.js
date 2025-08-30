@@ -283,6 +283,27 @@ function showDemographics() {
                 </select>
             </label>
             
+            <label>
+                Gender:
+                <select id="gender" required>
+                    <option value="">Select gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+            </label>
+            
+            <label>
+                Education Level:
+                <select id="education" required>
+                    <option value="">Select education level</option>
+                    <option value="Secondary Education">Secondary Education</option>
+                    <option value="Bachelor's">Bachelor's</option>
+                    <option value="Master's">Master's</option>
+                    <option value="Doctorate's">Doctorate's</option>
+                </select>
+            </label>
+            
             <button type="submit">Continue</button>
         </form>
     `);
@@ -292,7 +313,9 @@ function showDemographics() {
         
         state.demographics = {
             age: document.getElementById('age').value,
-            fluency: document.getElementById('fluency').value
+            fluency: document.getElementById('fluency').value,
+            gender: document.getElementById('gender').value,
+            education: document.getElementById('education').value
         };
         
         state.currentStep++;
@@ -512,6 +535,8 @@ async function submitData() {
       participantid: state.participantId,
       age: state.demographics.age,
       fluency: state.demographics.fluency,
+      gender: state.demographics.gender,
+      education: state.demographics.education,
       N1: state.responses.N1 || '',
       E1: state.responses.E1 || '',
       N2: state.responses.N2 || '',
