@@ -70,13 +70,41 @@ app.post('/submit', async (req, res) => {
   try {
     console.log('Received submission from origin:', req.get('origin'));
     console.log('Received submission:', req.body);
-    
+
+    // Normalize payload for Google Apps Script (works with e.parameter)
+    const expectedKeys = [
+      'timestamp','participantid','age','fluency','gender','educationlevel',
+      'N1','E1','N2','E2','N3','E3','N4','E4','N5','E5','N6','E6','N7','E7','N8'
+    ];
+
+    const normalizeValue = (v) => {
+      if (Array.isArray(v)) return JSON.stringify(v);
+      if (v === undefined || v === null) return '';
+      return String(v);
+    };
+
+    const normalized = {};
+    for (const key of expectedKeys) {
+      normalized[key] = normalizeValue(req.body[key]);
+    }
+
+    // Also include a full JSON payload for scripts that parse e.postData.contents
+    // but prefer x-www-form-urlencoded for broader GAS compatibility
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(normalized)) {
+      params.append(k, v);
+    }
+    // Include full payload as 'payload' as a fallback many GAS examples use
+    params.append('payload', JSON.stringify(req.body));
+
+    console.log('Forwarding to GAS (form-urlencoded):', Object.fromEntries(params));
+
     const response = await fetch(GOOGLE_SCRIPT_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: JSON.stringify(req.body)
+      body: params.toString()
     });
 
     const result = await response.text();
