@@ -536,7 +536,7 @@ async function submitData() {
       age: state.demographics.age,
       fluency: state.demographics.fluency,
       gender: state.demographics.gender,
-      education: state.demographics.education,
+      educationlevel: state.demographics.education,
       N1: state.responses.N1 || '',
       E1: state.responses.E1 || '',
       N2: state.responses.N2 || '',
