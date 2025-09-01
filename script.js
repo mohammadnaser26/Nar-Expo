@@ -475,7 +475,7 @@ function showQuestions() {
             answers.push(document.getElementById(`q${index}`).value);
         });
         
-        const textType = currentText.narrative ? 'N' : 'E';
+        const textType = currentText.type === 'narrative' ? 'N' : 'E';
         const textNumber = getTextNumber(currentText, textType);
         const columnName = textType + textNumber;
         
