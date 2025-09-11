@@ -71,9 +71,9 @@ app.post('/submit', async (req, res) => {
     console.log('Received submission from origin:', req.get('origin'));
     console.log('Received submission:', req.body);
 
-    // Normalize payload for Google Apps Script (works with e.parameter) - updated for 8 texts
+    // Normalize payload for Google Apps Script (works with e.parameter) - updated for 8 texts + experiment duration
     const expectedKeys = [
-      'timestamp','participantid','age','fluency','gender','educationlevel',
+      'timestamp','participantid','age','fluency','gender','educationlevel','experimentduration',
       'N1','E1','N2','E2','N3','E3','N4','E4','N5','E5','N6','E6','N7','E7','N8','E8'
     ];
 

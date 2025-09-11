@@ -151,6 +151,8 @@ let state = {
     currentTextIndex: 0,
     responses: {},
     startTime: Date.now(),
+    experimentStartTime: null,
+    experimentEndTime: null,
     timerInterval: null,
     timeLeft: 0
 };
@@ -257,6 +259,8 @@ function showConsent() {
     document.getElementById('consent-form').addEventListener('submit', function(e) {
         e.preventDefault();
         if (document.getElementById('consent-checkbox').checked) {
+            // Start the experiment timer
+            state.experimentStartTime = Date.now();
             state.currentStep++;
             showDemographics();
         }
@@ -502,12 +506,17 @@ function getTextNumber(currentText, textType) {
 }
 
 function showCompletion() {
+    const currentDuration = Math.round((Date.now() - state.experimentStartTime) / 1000);
+    const durationMinutes = Math.floor(currentDuration / 60);
+    const durationSeconds = currentDuration % 60;
+    
     showContainer(`
         <div class="completion-message">
             <h2>You have completed the experiment.</h2>
             
             <div class="participant-code">
                 <p><strong>Your participant code is: <span id="participant-code">${state.participantId}</span></strong></p>
+                <p><strong>Experiment duration: ${durationMinutes} minutes and ${durationSeconds} seconds</strong></p>
             </div>
             
             <p>If you have any questions, contact Richard Reichardt at <a href="mailto:reichardt.richard@ppk.elte.hu">reichardt.richard@ppk.elte.hu</a> or Mohammed Naser Al-Moqdad at <a href="mailto:reichardt.richard@ppk.elte.hu">naser@student.elte.hu</a>.</p>
@@ -523,6 +532,10 @@ function showCompletion() {
 }
 
 async function submitData() {
+  // End the experiment timer
+  state.experimentEndTime = Date.now();
+  const experimentDurationSeconds = Math.round((state.experimentEndTime - state.experimentStartTime) / 1000);
+  
   // Create data object matching EXACT sheet column headers for 8 texts
   const submissionData = {
       timestamp: new Date().toISOString(),
@@ -531,6 +544,7 @@ async function submitData() {
       fluency: state.demographics.fluency,
       gender: state.demographics.gender,
       educationlevel: state.demographics.education,
+      experimentduration: experimentDurationSeconds,
       N1: state.responses.N1 || '',
       E1: state.responses.E1 || '',
       N2: state.responses.N2 || '',
@@ -552,6 +566,7 @@ async function submitData() {
   // Log the data being sent for debugging
   console.log('Submitting data:', submissionData);
   console.log('Assigned texts for this participant:', state.assignedTexts.map(t => t.title));
+  console.log('Experiment duration:', experimentDurationSeconds, 'seconds (', Math.round(experimentDurationSeconds / 60), 'minutes )');
   
   try {
       const response = await fetch(SHEET_URL, {
