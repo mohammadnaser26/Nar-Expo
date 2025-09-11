@@ -169,73 +169,74 @@ function showContainer(html) {
     updateProgress();
 }
 
-// Improved Latin Square implementation for better randomization
-function createLatinSquare(texts) {
-  console.log('Creating Latin Square for participant:', state.participantId);
+// Complete randomization implementation for text selection
+function createRandomizedTextSelection(texts) {
+  console.log('Creating randomized text selection for participant:', state.participantId);
   
-  // Create separate objects for narrative and expository versions
-  const narrativeTexts = texts.map(text => ({
-      ...text,
-      type: 'narrative',
-      content: text.narrative,
-      expository: undefined // Remove expository to force narrative display
-  }));
-  
-  const expositoryTexts = texts.map(text => ({
-      ...text,
-      type: 'expository', 
-      content: text.expository,
-      narrative: undefined // Remove narrative to force expository display
-  }));
-  
-  // Create a more robust participant ID based system
-  // Use the last 8 characters to get more variation
+  // Create a seeded random number generator based on participant ID
   const participantHash = state.participantId.substring(Math.max(0, state.participantId.length - 8));
-  
-  // Convert participant ID to a more deterministic seed
   let participantSeed = 0;
   for (let i = 0; i < participantHash.length; i++) {
     participantSeed = ((participantSeed << 5) - participantSeed + participantHash.charCodeAt(i)) & 0xffffffff;
   }
-  
-  // Make the seed positive and use modulo to ensure good distribution
   participantSeed = Math.abs(participantSeed);
   
-  // Use different systematic approaches for narrative and expository selection
-  // This ensures better distribution across all texts
-  const totalTexts = narrativeTexts.length;
+  // Seeded random function
+  let seed = participantSeed;
+  function seededRandom() {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+  }
   
-  // For narratives: use participant seed modulo total texts
-  const narrativeStart = participantSeed % totalTexts;
-  const narrativeStep = ((participantSeed >> 8) % (totalTexts - 1)) + 1; // Ensure step is never 0
+  // Fisher-Yates shuffle with seeded random
+  function shuffleArray(array) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(seededRandom() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }
   
-  // For expositories: use a different offset to avoid correlation
-  const expositoryStart = (participantSeed + 17) % totalTexts; // 17 is a prime offset
-  const expositoryStep = (((participantSeed >> 16) % (totalTexts - 1)) + 1);
+  // Shuffle the texts to randomize topic selection
+  const shuffledTexts = shuffleArray(texts);
   
   const selectedTexts = [];
+  const usedTopics = new Set();
   
-  // Select 2 narratives using systematic sampling
-  for (let i = 0; i < 2; i++) {
-    const narrativeIndex = (narrativeStart + (i * narrativeStep)) % totalTexts;
-    selectedTexts.push(narrativeTexts[narrativeIndex]);
+  // First, try to select 4 different topics for narratives
+  for (const text of shuffledTexts) {
+    if (selectedTexts.filter(t => t.type === 'narrative').length < 4 && !usedTopics.has(text.title)) {
+      selectedTexts.push({
+        ...text,
+        type: 'narrative',
+        content: text.narrative,
+        expository: undefined
+      });
+      usedTopics.add(text.title);
+    }
   }
   
-  // Select 2 expositories using systematic sampling
-  for (let i = 0; i < 2; i++) {
-    const expositoryIndex = (expositoryStart + (i * expositoryStep)) % totalTexts;
-    selectedTexts.push(expositoryTexts[expositoryIndex]);
+  // Then, select 4 different topics for expository (from remaining topics)
+  for (const text of shuffledTexts) {
+    if (selectedTexts.filter(t => t.type === 'expository').length < 4 && !usedTopics.has(text.title)) {
+      selectedTexts.push({
+        ...text,
+        type: 'expository',
+        content: text.expository,
+        narrative: undefined
+      });
+      usedTopics.add(text.title);
+    }
   }
   
-  // Shuffle the selected texts using Fisher-Yates with participant seed
-  for (let i = selectedTexts.length - 1; i > 0; i--) {
-    const j = (participantSeed + i * 7) % (i + 1); // Use different multiplier for shuffling
-    [selectedTexts[i], selectedTexts[j]] = [selectedTexts[j], selectedTexts[i]];
-  }
+  // Final shuffle of the selected texts to randomize presentation order
+  const finalTexts = shuffleArray(selectedTexts);
   
-  console.log('Selected texts for this participant:', selectedTexts.map(t => `${t.title} (${t.type})`));
+  console.log('Selected texts for this participant:', finalTexts.map(t => `${t.title} (${t.type})`));
+  console.log('Used topics:', Array.from(usedTopics));
   
-  return selectedTexts;
+  return finalTexts;
 }
 
 
@@ -243,7 +244,7 @@ function showConsent() {
     showContainer(`
         <h2>Consent Form</h2>
         <p>This experiment is conducted by <strong>Richárd Reichardt and Mohammad Naser Al-Moqdad</strong> as part of a research project. Your participation is voluntary and anonymous.</p>
-        <p>You will be asked to read several texts and answer questions about them. <strong>You will have exactly 5 minutes to read each text.</strong> After the 5-minute timer expires, you will automatically proceed to answer questions about that text. The entire experiment will take approximately 15-20 minutes.</p>
+        <p>You will be asked to read several texts and answer questions about them. <strong>You will have exactly 5 minutes to read each text.</strong> After the 5-minute timer expires, you will automatically proceed to answer questions about that text. The entire experiment will take approximately 30-40 minutes.</p>
         <form id="consent-form">
             <label>
                 <input type="checkbox" id="consent-checkbox" required>
@@ -351,7 +352,7 @@ function showText() {
       
       <div class="text-container">
           <h3>${currentText.title}</h3>
-          <p class="text-type">Type: ${textType}</p>
+          
           <div class="text-content">${textContent}</div>
       </div>
       
@@ -432,25 +433,18 @@ function showQuestions() {
     questionsHtml += `
         <div class="question-item">
             <label>
-                ${numQuestions + 1}. What can you recall from the topic?
+                ${numQuestions + 1}. What do you recall from the topic?
                 <textarea id="recall-question" rows="4" required placeholder="Please write what you can remember about this topic..."></textarea>
             </label>
         </div>
     `;
     
-    // Add the familiarity question
+    // Add the detailed recall question (replacing familiarity question)
     questionsHtml += `
         <div class="question-item">
             <label>
-                ${numQuestions + 2}. How familiar are you with this topic? (1=not familiar, 5=very familiar)
-                <select id="familiarity-question" required>
-                    <option value="">Select familiarity level</option>
-                    <option value="1">1 - Not familiar</option>
-                    <option value="2">2 - Somewhat familiar</option>
-                    <option value="3">3 - Moderately familiar</option>
-                    <option value="4">4 - Very familiar</option>
-                    <option value="5">5 - Extremely familiar</option>
-                </select>
+                ${numQuestions + 2}. Please write down everything you can remember from the passage. Include all main ideas, small details, names, numbers, places, steps, and examples. Use your own words. If you're unsure about something, add it anyway and mark it with a '?'. Keep going until you cannot recall anything else.
+                <textarea id="detailed-recall-question" rows="6" required placeholder="Write everything you can remember from the passage..."></textarea>
             </label>
         </div>
     `;
@@ -467,8 +461,8 @@ function showQuestions() {
         // Add recall as first element
         answers.push(document.getElementById('recall-question').value);
         
-        // Add familiarity as second element
-        answers.push(document.getElementById('familiarity-question').value);
+        // Add detailed recall as second element (replacing familiarity)
+        answers.push(document.getElementById('detailed-recall-question').value);
         
         // Add all comprehension question answers (starting from index 2)
         currentText.questions.forEach((question, index) => {
@@ -529,7 +523,7 @@ function showCompletion() {
 }
 
 async function submitData() {
-  // Create data object matching EXACT sheet column headers
+  // Create data object matching EXACT sheet column headers for 8 texts
   const submissionData = {
       timestamp: new Date().toISOString(),
       participantid: state.participantId,
@@ -551,7 +545,8 @@ async function submitData() {
       E6: state.responses.E6 || '',
       N7: state.responses.N7 || '',
       E7: state.responses.E7 || '',
-      N8: state.responses.N8 || ''
+      N8: state.responses.N8 || '',
+      E8: state.responses.E8 || ''
   };
 
   // Log the data being sent for debugging
@@ -594,7 +589,7 @@ async function initExperiment() {
         const texts = TEXTS_DATA;
         
         state.participantId = generateId();
-        state.assignedTexts = createLatinSquare(texts);
+        state.assignedTexts = createRandomizedTextSelection(texts);
         state.totalSteps = 2 + (state.assignedTexts.length * 2);
         
         console.log('Assigned texts for participant', state.participantId, ':', state.assignedTexts.map(t => t.title));
