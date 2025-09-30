@@ -171,9 +171,9 @@ function showContainer(html) {
     updateProgress();
 }
 
-// Complete randomization implementation for text selection
+// Rejection sampling implementation for text selection
 function createRandomizedTextSelection(texts) {
-  console.log('Creating randomized text selection for participant:', state.participantId);
+  console.log('Creating randomized text selection using rejection sampling for participant:', state.participantId);
   
   // Create a seeded random number generator based on participant ID
   const participantHash = state.participantId.substring(Math.max(0, state.participantId.length - 8));
@@ -190,53 +190,92 @@ function createRandomizedTextSelection(texts) {
     return seed / 233280;
   }
   
-  // Fisher-Yates shuffle with seeded random
-  function shuffleArray(array) {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(seededRandom() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  }
-  
-  // Shuffle the texts to randomize topic selection
-  const shuffledTexts = shuffleArray(texts);
-  
+  // Rejection sampling to select 8 texts (4 narrative + 4 expository)
+  // with no topic overlap
   const selectedTexts = [];
   const usedTopics = new Set();
+  const maxAttempts = 1000; // Prevent infinite loops
+  let attempts = 0;
   
-  // First, try to select 4 different topics for narratives
-  for (const text of shuffledTexts) {
-    if (selectedTexts.filter(t => t.type === 'narrative').length < 4 && !usedTopics.has(text.title)) {
+  while (selectedTexts.length < 8 && attempts < maxAttempts) {
+    attempts++;
+    
+    // Randomly select a text from the available texts
+    const randomIndex = Math.floor(seededRandom() * texts.length);
+    const selectedText = texts[randomIndex];
+    
+    // Check if this topic is already used
+    if (usedTopics.has(selectedText.title)) {
+      continue; // Reject this selection, try again
+    }
+    
+    // Count current narrative and expository selections
+    const currentNarratives = selectedTexts.filter(t => t.type === 'narrative').length;
+    const currentExpositories = selectedTexts.filter(t => t.type === 'expository').length;
+    
+    // Randomly decide between narrative or expository for this topic
+    const useNarrative = seededRandom() < 0.5;
+    
+    // Check if we can add this type (narrative or expository)
+    if (useNarrative && currentNarratives < 4) {
+      // Add narrative version
       selectedTexts.push({
-        ...text,
+        ...selectedText,
         type: 'narrative',
-        content: text.narrative,
+        content: selectedText.narrative,
         expository: undefined
       });
-      usedTopics.add(text.title);
+      usedTopics.add(selectedText.title);
+    } else if (!useNarrative && currentExpositories < 4) {
+      // Add expository version
+      selectedTexts.push({
+        ...selectedText,
+        type: 'expository',
+        content: selectedText.expository,
+        narrative: undefined
+      });
+      usedTopics.add(selectedText.title);
+    } else {
+      // If we can't add the randomly chosen type, try the other type
+      if (!useNarrative && currentNarratives < 4) {
+        // Try narrative instead
+        selectedTexts.push({
+          ...selectedText,
+          type: 'narrative',
+          content: selectedText.narrative,
+          expository: undefined
+        });
+        usedTopics.add(selectedText.title);
+      } else if (useNarrative && currentExpositories < 4) {
+        // Try expository instead
+        selectedTexts.push({
+          ...selectedText,
+          type: 'expository',
+          content: selectedText.expository,
+          narrative: undefined
+        });
+        usedTopics.add(selectedText.title);
+      }
+      // If neither type can be added, reject this selection and continue
     }
   }
   
-  // Then, select 4 different topics for expository (from remaining topics)
-  for (const text of shuffledTexts) {
-    if (selectedTexts.filter(t => t.type === 'expository').length < 4 && !usedTopics.has(text.title)) {
-      selectedTexts.push({
-        ...text,
-        type: 'expository',
-        content: text.expository,
-        narrative: undefined
-      });
-      usedTopics.add(text.title);
-    }
+  // If we couldn't select 8 texts (shouldn't happen with 8 available topics)
+  if (selectedTexts.length < 8) {
+    console.warn('Could not select 8 texts after', attempts, 'attempts. Selected:', selectedTexts.length);
   }
   
   // Final shuffle of the selected texts to randomize presentation order
-  const finalTexts = shuffleArray(selectedTexts);
+  const finalTexts = [...selectedTexts];
+  for (let i = finalTexts.length - 1; i > 0; i--) {
+    const j = Math.floor(seededRandom() * (i + 1));
+    [finalTexts[i], finalTexts[j]] = [finalTexts[j], finalTexts[i]];
+  }
   
   console.log('Selected texts for this participant:', finalTexts.map(t => `${t.title} (${t.type})`));
   console.log('Used topics:', Array.from(usedTopics));
+  console.log('Final distribution - Narratives:', finalTexts.filter(t => t.type === 'narrative').length, 'Expositories:', finalTexts.filter(t => t.type === 'expository').length);
+  console.log('Selection completed in', attempts, 'attempts');
   
   return finalTexts;
 }
@@ -433,16 +472,6 @@ function showQuestions() {
         `;
     });
     
-    // Add the recall question
-    questionsHtml += `
-        <div class="question-item">
-            <label>
-                ${numQuestions + 1}. What do you recall from the topic?
-                <textarea id="recall-question" rows="4" required placeholder="Please write what you can remember about this topic..."></textarea>
-            </label>
-        </div>
-    `;
-    
     // Add the detailed recall question (replacing familiarity question)
     questionsHtml += `
         <div class="question-item">
@@ -452,6 +481,23 @@ function showQuestions() {
             </label>
         </div>
     `;
+    // Add the recall question
+    questionsHtml += `
+       <div class="question-item">
+            <label>
+                ${numQuestions + 2}. How familiar are you with this topic? (1=not familiar, 5=very familiar)
+                <select id="familiarity-question" required>
+                    <option value="">Select familiarity level</option>
+                    <option value="1">1 - Not familiar</option>
+                    <option value="2">2 - Somewhat familiar</option>
+                    <option value="3">3 - Moderately familiar</option>
+                    <option value="4">4 - Very familiar</option>
+                    <option value="5">5 - Extremely familiar</option>
+                </select>
+            </label>
+        </div>
+    `;
+    
     
     questionsHtml += '<button type="submit">Submit Answers</button></form>';
     
