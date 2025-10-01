@@ -482,11 +482,11 @@ function showQuestions() {
         
         const answers = [];
         
-        // Add recall as first element
-        answers.push(document.getElementById('recall-question').value);
-        
-        // Add detailed recall as second element (replacing familiarity)
+        // Add detailed recall as first element
         answers.push(document.getElementById('detailed-recall-question').value);
+        
+        // Add familiarity as second element
+        answers.push(document.getElementById('familiarity-question').value);
         
         // Add all comprehension question answers (starting from index 2)
         currentText.questions.forEach((question, index) => {
