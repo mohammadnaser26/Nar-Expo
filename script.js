@@ -171,9 +171,9 @@ function showContainer(html) {
     updateProgress();
 }
 
-// Rejection sampling implementation for text selection
+// Randomization: Assign all 8 topics to slots N1,E1,N2,E2,N3,E3,N4,E4, then choose N or E from each pair
 function createRandomizedTextSelection(texts) {
-  console.log('Creating randomized text selection using rejection sampling for participant:', state.participantId);
+  console.log('Creating randomized text selection using all 8 topics for participant:', state.participantId);
   
   // Create a seeded random number generator based on participant ID
   const participantHash = state.participantId.substring(Math.max(0, state.participantId.length - 8));
@@ -190,92 +190,66 @@ function createRandomizedTextSelection(texts) {
     return seed / 233280;
   }
   
-  // Rejection sampling to select 8 texts (4 narrative + 4 expository)
-  // with no topic overlap
-  const selectedTexts = [];
-  const usedTopics = new Set();
-  const maxAttempts = 1000; // Prevent infinite loops
-  let attempts = 0;
+  // First, randomly shuffle all 8 topics to assign them to the 8 slots (N1,E1,N2,E2,N3,E3,N4,E4)
+  const shuffledTexts = [...texts];
+  for (let i = shuffledTexts.length - 1; i > 0; i--) {
+    const j = Math.floor(seededRandom() * (i + 1));
+    [shuffledTexts[i], shuffledTexts[j]] = [shuffledTexts[j], shuffledTexts[i]];
+  }
   
-  while (selectedTexts.length < 8 && attempts < maxAttempts) {
-    attempts++;
-    
-    // Randomly select a text from the available texts
-    const randomIndex = Math.floor(seededRandom() * texts.length);
-    const selectedText = texts[randomIndex];
-    
-    // Check if this topic is already used
-    if (usedTopics.has(selectedText.title)) {
-      continue; // Reject this selection, try again
-    }
-    
-    // Count current narrative and expository selections
-    const currentNarratives = selectedTexts.filter(t => t.type === 'narrative').length;
-    const currentExpositories = selectedTexts.filter(t => t.type === 'expository').length;
-    
-    // Randomly decide between narrative or expository for this topic
+  // Create topic assignments for slots N1,E1,N2,E2,N3,E3,N4,E4
+  const topicSlots = {
+    N1: shuffledTexts[0],
+    E1: shuffledTexts[1], 
+    N2: shuffledTexts[2],
+    E2: shuffledTexts[3],
+    N3: shuffledTexts[4],
+    E3: shuffledTexts[5],
+    N4: shuffledTexts[6],
+    E4: shuffledTexts[7]
+  };
+  
+  const selectedTexts = [];
+  
+  // For each number pair (1,2,3,4), randomly choose either N or E version
+  for (let number = 1; number <= 4; number++) {
     const useNarrative = seededRandom() < 0.5;
     
-    // Check if we can add this type (narrative or expository)
-    if (useNarrative && currentNarratives < 4) {
-      // Add narrative version
+    if (useNarrative) {
+      // Choose the N{number} slot
+      const topicData = topicSlots[`N${number}`];
       selectedTexts.push({
-        ...selectedText,
+        ...topicData,
         type: 'narrative',
-        content: selectedText.narrative,
-        expository: undefined
+        content: topicData.narrative,
+        expository: undefined,
+        slotNumber: number,
+        originalSlot: `N${number}`
       });
-      usedTopics.add(selectedText.title);
-    } else if (!useNarrative && currentExpositories < 4) {
-      // Add expository version
-      selectedTexts.push({
-        ...selectedText,
-        type: 'expository',
-        content: selectedText.expository,
-        narrative: undefined
-      });
-      usedTopics.add(selectedText.title);
     } else {
-      // If we can't add the randomly chosen type, try the other type
-      if (!useNarrative && currentNarratives < 4) {
-        // Try narrative instead
-        selectedTexts.push({
-          ...selectedText,
-          type: 'narrative',
-          content: selectedText.narrative,
-          expository: undefined
-        });
-        usedTopics.add(selectedText.title);
-      } else if (useNarrative && currentExpositories < 4) {
-        // Try expository instead
-        selectedTexts.push({
-          ...selectedText,
-          type: 'expository',
-          content: selectedText.expository,
-          narrative: undefined
-        });
-        usedTopics.add(selectedText.title);
-      }
-      // If neither type can be added, reject this selection and continue
+      // Choose the E{number} slot  
+      const topicData = topicSlots[`E${number}`];
+      selectedTexts.push({
+        ...topicData,
+        type: 'expository',
+        content: topicData.expository,
+        narrative: undefined,
+        slotNumber: number,
+        originalSlot: `E${number}`
+      });
     }
   }
   
-  // If we couldn't select 8 texts (shouldn't happen with 8 available topics)
-  if (selectedTexts.length < 8) {
-    console.warn('Could not select 8 texts after', attempts, 'attempts. Selected:', selectedTexts.length);
-  }
-  
-  // Final shuffle of the selected texts to randomize presentation order
+  // Shuffle the selected texts to randomize presentation order
   const finalTexts = [...selectedTexts];
   for (let i = finalTexts.length - 1; i > 0; i--) {
     const j = Math.floor(seededRandom() * (i + 1));
     [finalTexts[i], finalTexts[j]] = [finalTexts[j], finalTexts[i]];
   }
   
-  console.log('Selected texts for this participant:', finalTexts.map(t => `${t.title} (${t.type})`));
-  console.log('Used topics:', Array.from(usedTopics));
+  console.log('Topic slot assignments:', Object.entries(topicSlots).map(([slot, topic]) => `${slot}: ${topic.title}`));
+  console.log('Selected texts for this participant:', finalTexts.map(t => `${t.originalSlot} (${t.type}): ${t.title}`));
   console.log('Final distribution - Narratives:', finalTexts.filter(t => t.type === 'narrative').length, 'Expositories:', finalTexts.filter(t => t.type === 'expository').length);
-  console.log('Selection completed in', attempts, 'attempts');
   
   return finalTexts;
 }
@@ -537,18 +511,8 @@ function showQuestions() {
 }
 
 function getTextNumber(currentText, textType) {
-    const textMapping = {
-        'Hindenburg disaster': 1,
-        'The Invention of the Birth Control Pill': 2,
-        'Three Christs of Ypsilanti': 3,
-        'Discovery of blood types (Karl Landsteiner)': 4,
-        'Discovery behind penicillin': 5,
-        'The Invention of the Printing Press': 6,
-        'The Gold Standard': 7,
-        'The Zimmerman Telegram': 8
-    };
-    
-    return textMapping[currentText.title] || 1;
+    // Use the slot number assigned during randomization
+    return currentText.slotNumber || 1;
 }
 
 function showCompletion() {
