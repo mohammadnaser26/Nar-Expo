@@ -446,16 +446,16 @@ function showQuestions() {
         `;
     });
     
-    // Add the detailed recall question (replacing familiarity question)
+    // Add the detailed recall question
     questionsHtml += `
         <div class="question-item">
             <label>
-                ${numQuestions + 2}. Please write down everything you can remember from the passage. Include all main ideas, small details, names, numbers, places, steps, and examples. Use your own words. If you're unsure about something, add it anyway and mark it with a '?'. Keep going until you cannot recall anything else.
+                ${numQuestions + 1}. Please write down everything you can remember from the passage. Include all main ideas, small details, names, numbers, places, steps, and examples. Use your own words. If you're unsure about something, add it anyway and mark it with a '?'. Keep going until you cannot recall anything else.
                 <textarea id="detailed-recall-question" rows="6" required placeholder="Write everything you can remember from the passage..."></textarea>
             </label>
         </div>
     `;
-    // Add the recall question
+    // Add the familiarity question
     questionsHtml += `
        <div class="question-item">
             <label>
@@ -483,14 +483,32 @@ function showQuestions() {
         const answers = [];
         
         // Add detailed recall as first element
-        answers.push(document.getElementById('detailed-recall-question').value);
+        const detailedRecallElement = document.getElementById('detailed-recall-question');
+        if (detailedRecallElement) {
+            answers.push(detailedRecallElement.value);
+        } else {
+            console.error('detailed-recall-question element not found');
+            answers.push('');
+        }
         
         // Add familiarity as second element
-        answers.push(document.getElementById('familiarity-question').value);
+        const familiarityElement = document.getElementById('familiarity-question');
+        if (familiarityElement) {
+            answers.push(familiarityElement.value);
+        } else {
+            console.error('familiarity-question element not found');
+            answers.push('');
+        }
         
         // Add all comprehension question answers (starting from index 2)
         currentText.questions.forEach((question, index) => {
-            answers.push(document.getElementById(`q${index}`).value);
+            const questionElement = document.getElementById(`q${index}`);
+            if (questionElement) {
+                answers.push(questionElement.value);
+            } else {
+                console.error(`Question element q${index} not found`);
+                answers.push('');
+            }
         });
         
         const textType = currentText.type === 'narrative' ? 'N' : 'E';
