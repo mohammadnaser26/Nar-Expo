@@ -171,87 +171,81 @@ function showContainer(html) {
     updateProgress();
 }
 
-// Randomization: Assign all 8 topics to slots N1,E1,N2,E2,N3,E3,N4,E4, then choose N or E from each pair
+// Randomization: Use all 8 topics. For each topic (slots 1..8), randomly choose N or E version.
 function createRandomizedTextSelection(texts) {
-  console.log('Creating randomized text selection using all 8 topics for participant:', state.participantId);
-  
-  // Create a seeded random number generator based on participant ID
-  const participantHash = state.participantId.substring(Math.max(0, state.participantId.length - 8));
-  let participantSeed = 0;
-  for (let i = 0; i < participantHash.length; i++) {
-    participantSeed = ((participantSeed << 5) - participantSeed + participantHash.charCodeAt(i)) & 0xffffffff;
-  }
-  participantSeed = Math.abs(participantSeed);
-  
-  // Seeded random function
-  let seed = participantSeed;
-  function seededRandom() {
-    seed = (seed * 9301 + 49297) % 233280;
-    return seed / 233280;
-  }
-  
-  // First, randomly shuffle all 8 topics to assign them to the 8 slots (N1,E1,N2,E2,N3,E3,N4,E4)
-  const shuffledTexts = [...texts];
-  for (let i = shuffledTexts.length - 1; i > 0; i--) {
-    const j = Math.floor(seededRandom() * (i + 1));
-    [shuffledTexts[i], shuffledTexts[j]] = [shuffledTexts[j], shuffledTexts[i]];
-  }
-  
-  // Create topic assignments for slots N1,E1,N2,E2,N3,E3,N4,E4
-  const topicSlots = {
-    N1: shuffledTexts[0],
-    E1: shuffledTexts[1], 
-    N2: shuffledTexts[2],
-    E2: shuffledTexts[3],
-    N3: shuffledTexts[4],
-    E3: shuffledTexts[5],
-    N4: shuffledTexts[6],
-    E4: shuffledTexts[7]
-  };
-  
-  const selectedTexts = [];
-  
-  // For each number pair (1,2,3,4), randomly choose either N or E version
-  for (let number = 1; number <= 4; number++) {
-    const useNarrative = seededRandom() < 0.5;
-    
-    if (useNarrative) {
-      // Choose the N{number} slot
-      const topicData = topicSlots[`N${number}`];
-      selectedTexts.push({
-        ...topicData,
-        type: 'narrative',
-        content: topicData.narrative,
-        expository: undefined,
-        slotNumber: number,
-        originalSlot: `N${number}`
-      });
-    } else {
-      // Choose the E{number} slot  
-      const topicData = topicSlots[`E${number}`];
-      selectedTexts.push({
-        ...topicData,
-        type: 'expository',
-        content: topicData.expository,
-        narrative: undefined,
-        slotNumber: number,
-        originalSlot: `E${number}`
-      });
+    console.log('Creating randomized text selection using all 8 topics for participant:', state.participantId);
+
+    // Create a seeded random number generator based on participant ID
+    const participantHash = state.participantId.substring(Math.max(0, state.participantId.length - 8));
+    let participantSeed = 0;
+    for (let i = 0; i < participantHash.length; i++) {
+        participantSeed = ((participantSeed << 5) - participantSeed + participantHash.charCodeAt(i)) & 0xffffffff;
     }
-  }
-  
-  // Shuffle the selected texts to randomize presentation order
-  const finalTexts = [...selectedTexts];
-  for (let i = finalTexts.length - 1; i > 0; i--) {
-    const j = Math.floor(seededRandom() * (i + 1));
-    [finalTexts[i], finalTexts[j]] = [finalTexts[j], finalTexts[i]];
-  }
-  
-  console.log('Topic slot assignments:', Object.entries(topicSlots).map(([slot, topic]) => `${slot}: ${topic.title}`));
-  console.log('Selected texts for this participant:', finalTexts.map(t => `${t.originalSlot} (${t.type}): ${t.title}`));
-  console.log('Final distribution - Narratives:', finalTexts.filter(t => t.type === 'narrative').length, 'Expositories:', finalTexts.filter(t => t.type === 'expository').length);
-  
-  return finalTexts;
+    participantSeed = Math.abs(participantSeed);
+
+    // Seeded random function
+    let seed = participantSeed;
+    function seededRandom() {
+        seed = (seed * 9301 + 49297) % 233280;
+        return seed / 233280;
+    }
+
+    // Shuffle all 8 topics; their order defines slots 1..8
+    const shuffledTopics = [...texts];
+    for (let i = shuffledTopics.length - 1; i > 0; i--) {
+        const j = Math.floor(seededRandom() * (i + 1));
+        [shuffledTopics[i], shuffledTopics[j]] = [shuffledTopics[j], shuffledTopics[i]];
+    }
+
+    const selectedTexts = [];
+
+    // For each slot 1..8, pick either narrative or expository version for that SAME topic
+    for (let slot = 1; slot <= 8; slot++) {
+        const topicData = shuffledTopics[slot - 1];
+        const useNarrative = seededRandom() < 0.5;
+
+        if (useNarrative) {
+            selectedTexts.push({
+                ...topicData,
+                type: 'narrative',
+                content: topicData.narrative,
+                expository: undefined,
+                slotNumber: slot,
+                originalSlot: `N${slot}`
+            });
+        } else {
+            selectedTexts.push({
+                ...topicData,
+                type: 'expository',
+                content: topicData.expository,
+                narrative: undefined,
+                slotNumber: slot,
+                originalSlot: `E${slot}`
+            });
+        }
+    }
+
+    // Randomize presentation order; slotNumber keeps mapping for sheet columns
+    const finalTexts = [...selectedTexts];
+    for (let i = finalTexts.length - 1; i > 0; i--) {
+        const j = Math.floor(seededRandom() * (i + 1));
+        [finalTexts[i], finalTexts[j]] = [finalTexts[j], finalTexts[i]];
+    }
+
+    console.log('Slots 1..8 topics:', finalTexts
+        .slice()
+        .sort((a, b) => a.slotNumber - b.slotNumber)
+        .map(t => `${t.slotNumber}: ${t.title}`));
+    console.log('Selected texts for this participant (version by slot):',
+        finalTexts
+            .slice()
+            .sort((a, b) => a.slotNumber - b.slotNumber)
+            .map(t => `${t.originalSlot} (${t.type}): ${t.title}`)
+    );
+    console.log('Distribution - Narratives:', finalTexts.filter(t => t.type === 'narrative').length,
+                            'Expositories:', finalTexts.filter(t => t.type === 'expository').length);
+
+    return finalTexts;
 }
 
 
