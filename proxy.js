@@ -46,7 +46,7 @@ app.options('*', cors(corsOptions));
 app.use(express.json());
 
 // Replace with your actual Google Apps Script URL
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYbgzrV9ooXDytwvb2n0C29VpapYala1MJPVcgOFnoqxsRN0yT8FLv5QiuUaOl7fI/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhI3t753SnF447RZrWeGX_bS760IxnGijxlZiGfh2xrQy1HaviQKUeb8Uy8iCVgOeH/exec";
 
 app.get('/', (req, res) => {
   res.json({ 
